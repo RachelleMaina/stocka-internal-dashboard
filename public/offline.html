@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>No Internet Connection</title>
+  <style>
+    :root {
+      --emerald: #10b981; /* Tailwind emerald-500 */
+      --emerald-dark: #059669; /* Tailwind emerald-600 */
+      --gray: #374151; /* Tailwind gray-700 */
+      --gray-light: #6b7280; /* Tailwind gray-500 */
+      --bg: #f9fafb; /* Tailwind gray-50 */
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, sans-serif;
+      background-color: var(--bg);
+      color: var(--gray);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+      padding: 1rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+      padding: 2rem;
+      max-width: 420px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+      font-weight: 700;
+    }
+
+    p {
+      font-size: 1rem;
+      color: var(--gray-light);
+      margin-bottom: 1.5rem;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.75rem 1.5rem;
+      background-color: var(--emerald);
+      color: white;
+      border: none;
+      border-radius: 9999px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s ease-in-out;
+    }
+
+    .btn:hover {
+      background-color: var(--emerald-dark);
+    }
+
+    .icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📡</div>
+    <h1>No Internet Connection</h1>
+    <p>Your device is offline. Please check your connection and try again.</p>
+    <a href="/" class="btn">Try Again</a>
+  </div>
+</body>
+</html>

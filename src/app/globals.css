@@ -1,0 +1,263 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: #139F9E; 
+  --color-accent: #D9A066;
+  /* --color-primary: #0E7490; */
+ /* //Charcoal teal:#0D9488 */
+ /* slate teal: #0E7490 */
+ /* // emerald green: #046A38 */
+ /* warm amber gold: #D97706 */
+
+}
+
+:root {
+  --primary-color: var(--color-primary);
+
+}
+
+body {
+  background-color: var(--color-page-light);
+  color: #333;
+}
+
+input:-webkit-autofill {
+  box-shadow: 0 0 0px 1000px white inset !important;
+  -webkit-box-shadow: 0 0 0px 1000px white inset !important;
+}
+/* @media (prefers-color-scheme: dark) {
+  body {
+    background-color: var(--color-page-dark);
+    color: var(--color-text-primary-dark);
+  }
+} */
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* You can place this in your global.css or a module */
+/* .react-phone-number-input input {
+  @apply border border-neutral-300 dark:border-neutral-700 rounded-md px-3 py-2 text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-900 
+  focus:ring-2 focus:ring-primary focus:border-primary transition w-full;
+}
+
+.react-phone-number-input__icon {
+  @apply dark:brightness-90;
+} */
+
+
+  /* .my-react-select-container {
+  } */
+  .my-react-select-container .my-react-select__control {
+    @apply   bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500;
+  }
+
+  .my-react-select-container .my-react-select__control--is-focused {
+    @apply border-neutral-500 hover:border-neutral-500 dark:border-neutral-700 dark:hover:border-neutral-700 shadow-none;
+  }
+
+  .my-react-select-container .my-react-select__menu {
+    @apply bg-neutral-100 dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-700;
+  }
+
+  .my-react-select-container .my-react-select__option {
+    @apply text-neutral-600 dark:text-neutral-200 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-700 dark:hover:bg-neutral-800;
+  }
+  /* .my-react-select-container .my-react-select__option--is-focused {
+    @apply bg-neutral-200 dark:bg-neutral-900;
+  } */
+
+  .my-react-select-container .my-react-select__indicator-separator {
+    @apply bg-neutral-300 dark:bg-neutral-600;
+  }
+.my-react-select-container .my-react-select__placeholder {
+  @apply text-neutral-400 dark:text-neutral-500 text-sm;
+}
+
+  .my-react-select-container .my-react-select__input-container,
+  .my-react-select-container .my-react-select__single-value {
+    @apply text-neutral-900 dark:text-neutral-300 text-sm;
+  }
+
+
+  .my-react-select-container .my-react-select__multi-value{
+ @apply bg-neutral-200 dark:bg-neutral-600 text-neutral-600 dark:text-neutral-200 text-sm;
+}
+.my-react-select-container .my-react-select__multi-value__label {
+ @apply  text-neutral-800 dark:text-neutral-300 text-xs;
+}
+.pos-item-search-select{
+   @apply  border border-neutral-300 dark:border-neutral-800 rounded   focus:ring-2 focus:ring-primary focus:border-primary transition
+}
+
+
+.react-datetime-picker__wrapper {
+  border: none !important;
+  background-color: transparent !important;
+  padding: 0 !important;
+}
+
+.react-datetime-picker__inputGroup {
+  background-color: transparent !important;
+  border: none !important;
+}
+
+.react-datetime-picker__inputGroup__input {
+
+  background-color: inherit;
+  color: inherit;
+  border: none;
+  outline: none;
+}
+
+/* src/styles/globals.css */
+
+/* DateTimePicker Wrapper */
+
+.react-datetime-picker__wrapper {
+  @apply flex items-center bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-md px-3 py-2 text-neutral-900 dark:text-neutral-100;
+}
+
+
+.react-datetime-picker__inputGroup input {
+  @apply bg-transparent text-neutral-900 dark:text-neutral-100 focus:outline-none w-auto;
+}
+
+/* Clear and Calendar/Clock Buttons */
+.react-datetime-picker__button {
+  @apply text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary transition-colors;
+}
+
+.react-datetime-picker__button svg {
+  @apply w-5 h-5;
+}
+
+/* Calendar Dropdown */
+.react-calendar {
+  @apply bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-md shadow-lg p-4 text-neutral-900 dark:text-neutral-100;
+}
+ 
+
+/* Calendar Navigation */
+.react-calendar__navigation {
+  @apply flex justify-between mb-2;
+}
+
+.react-calendar__navigation button, .react-calendar__navigation button:disabled {
+  @apply text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary focus:outline-none transition-colors;
+}
+.react-calendar__navigation button:disabled, .react-calendar__navigation button:enabled:hover {
+  @apply bg-neutral-100 dark:bg-neutral-900;
+}
+
+/* Calendar Month/Year View */
+.react-calendar__month-view__weekdays {
+  @apply text-neutral-500 dark:text-neutral-400 text-sm font-medium mb-1;
+}
+
+.react-calendar__month-view__days {
+  @apply grid grid-cols-7 gap-1;
+}
+
+/* Calendar Date Tiles */
+.react-calendar__tile, .react-calendar__tile:enabled:hover, .react-calendar__tile:enabled:focus {
+  @apply bg-neutral-100 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 hover:bg-indigo-100 dark:hover:bg-primary focus:bg-indigo-200 dark:focus:bg-indigo-800 rounded-md p-2 text-center text-sm transition-colors;
+}
+
+.react-calendar__tile--active,
+.react-calendar__tile--hasActive {
+  @apply bg-primary text-white hover:bg-indigo-700 dark:hover:bg-primary;
+}
+
+.react-calendar__tile--now {
+  @apply bg-neutral-200 dark:bg-neutral-700;
+}
+
+.react-calendar__tile:disabled {
+  @apply bg-neutral-50 dark:bg-neutral-900 text-neutral-400 dark:text-neutral-600 cursor-not-allowed;
+}
+
+/* Clock */
+.react-clock {
+  @apply bg-neutral-100 dark:bg-neutral-900 rounded-full p-4;
+}
+
+.react-clock__face {
+  @apply border border-neutral-200 dark:border-neutral-700;
+}
+
+.react-clock__hand__body {
+  @apply bg-primary dark:bg-primary;
+}
+
+.react-clock__mark__body {
+  @apply bg-neutral-500 dark:bg-neutral-400;
+}
+
+.react-clock__mark__number {
+  @apply text-neutral-900 dark:text-neutral-100 text-sm;
+}
+
+/* Time Input Separator */
+.react-datetime-picker__inputGroup__divider {
+  @apply text-neutral-500 dark:text-neutral-400;
+}
+
+
+/* For Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(120, 120, 120, 0.4);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(120, 120, 120, 0.6);
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 120, 120, 0.4) transparent;
+}
+
+/* Optional: Dark mode variant */
+html.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(180, 180, 180, 0.3);
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(180, 180, 180, 0.5);
+}
+
+html.dark * {
+  scrollbar-color: rgba(180, 180, 180, 0.3) transparent;
+}
+
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    /* display: none; <- Crashes Chrome on hover */
+    -webkit-appearance: none;
+    margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+}
+
+input[type=number] {
+    -moz-appearance:textfield; /* Firefox */
+}
