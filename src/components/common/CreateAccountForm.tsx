@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ChevronLeft, Building2, User, Mail, Phone, Key, Tag, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import clsx from 'clsx';
 import toast from 'react-hot-toast';
+import Select, { SingleValue } from 'react-select';
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 // ── Types ────────────────────────────────────────────────
 type CreateAccountPayload = {
@@ -21,10 +23,6 @@ type CreateAccountPayload = {
   kra_pin: string;
   industry: string;
 
-  // Optional referral fields
-  referrer_user_id: string | null;
-  installer_user_id: string | null;
-
   // Outlet details
   outlet_name: string;
   outlet_phone: string;
@@ -38,10 +36,15 @@ type CreateAccountFormProps = {
   isLoading?: boolean;
 };
 
-type ValidationErrors = Partial<Record<keyof CreateAccountPayload, string>>;
+type ValidationErrors = Partial<Record<keyof CreateAccountPayload | 'confirm_password', string>>;
+
+type IndustryOption = {
+  value: string;
+  label: string;
+};
 
 // Industry options
-const industryOptions = [
+const industryOptions: IndustryOption[] = [
   { value: 'food_vendor', label: 'Food Vendor' },
   { value: 'restaurant', label: 'Restaurant' },
   { value: 'bar', label: 'Bar & Lounge' },
@@ -73,18 +76,28 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
     kra_pin: initialData?.kra_pin || '',
     industry: initialData?.industry || 'food_vendor',
 
-    // Optional
-    referrer_user_id: initialData?.referrer_user_id || null,
-    installer_user_id: initialData?.installer_user_id || null,
-
-    // Outlet
+    // Outlet (auto-filled from account)
     outlet_name: initialData?.outlet_name || '',
     outlet_phone: initialData?.outlet_phone || '',
     outlet_email: initialData?.outlet_email || '',
   });
 
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Auto-fill outlet details when account details change
+  useEffect(() => {
+    if (!initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        outlet_name: prev.account_name,
+        outlet_phone: prev.contact_phone,
+        outlet_email: prev.contact_email,
+      }));
+    }
+  }, [formData.account_name, formData.contact_phone, formData.contact_email, initialData]);
 
   // ── Validation ────────────────────────────────────────
   const validateForm = (): boolean => {
@@ -110,6 +123,9 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
     } else if (formData.password.length < 4) {
       newErrors.password = 'Password must be at least 4 characters';
     }
+    if (formData.password !== confirmPassword) {
+      newErrors.confirm_password = 'Passwords do not match';
+    }
 
     // Account details validation
     if (!formData.account_name.trim()) {
@@ -122,9 +138,6 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
       newErrors.contact_email = 'Contact email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contact_email)) {
       newErrors.contact_email = 'Invalid email format';
-    }
-    if (!formData.kra_pin.trim()) {
-      newErrors.kra_pin = 'KRA PIN is required';
     }
 
     // Outlet validation
@@ -157,6 +170,23 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
     }
   };
 
+  const handleConfirmPasswordChange = (value: string) => {
+    setConfirmPassword(value);
+    if (errors.confirm_password) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.confirm_password;
+        return newErrors;
+      });
+    }
+  };
+
+  const handleIndustryChange = (option: SingleValue<IndustryOption>) => {
+    if (option) {
+      handleInputChange('industry', option.value);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) {
       toast.error('Please fix the errors in the form');
@@ -182,40 +212,28 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
       <div className="flex-1 flex flex-col lg:flex-row gap-10 overflow-y-auto p-6">
         {/* Left Column: Account Details */}
         <div className="flex-1 space-y-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Building2 size={20} className="text-primary" />
-            </div>
-            <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
-              Account Details
-            </h2>
-          </div>
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-6">
+            Account Details
+          </h2>
 
           {/* Account Name */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
               Account Name <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={formData.account_name}
-                onChange={(e) => handleInputChange('account_name', e.target.value)}
-                placeholder="e.g. Nairobi Drinks & Spirits"
-                className={clsx(
-                  'w-full px-4 py-2.5 pl-10 text-sm border rounded-lg transition-colors',
-                  'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100',
-                  'focus:outline-none focus:ring-2 focus:ring-primary',
-                  errors.account_name
-                    ? 'border-red-500 dark:border-red-500'
-                    : 'border-neutral-300 dark:border-neutral-700'
-                )}
-              />
-              <Building2
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"
-              />
-            </div>
+            <input
+              type="text"
+              value={formData.account_name}
+              onChange={(e) => handleInputChange('account_name', e.target.value)}
+              className={clsx(
+                'w-full px-4 py-2.5 text-sm border rounded-lg transition-colors',
+                'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100',
+                'focus:outline-none focus:ring-2 focus:ring-primary',
+                errors.account_name
+                  ? 'border-red-500 dark:border-red-500'
+                  : 'border-neutral-300 dark:border-neutral-700'
+              )}
+            />
             {errors.account_name && (
               <p className="mt-1 text-xs text-red-500">{errors.account_name}</p>
             )}
@@ -226,26 +244,24 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
               Contact Phone <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <input
-                type="tel"
-                value={formData.contact_phone}
-                onChange={(e) => handleInputChange('contact_phone', e.target.value)}
-                placeholder="254700000000"
-                className={clsx(
-                  'w-full px-4 py-2.5 pl-10 text-sm border rounded-lg transition-colors',
-                  'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100',
-                  'focus:outline-none focus:ring-2 focus:ring-primary',
-                  errors.contact_phone
-                    ? 'border-red-500 dark:border-red-500'
-                    : 'border-neutral-300 dark:border-neutral-700'
-                )}
-              />
-              <Phone
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"
-              />
-            </div>
+            <PhoneInput
+              country="KE"
+              international
+              defaultCountry="KE"
+              value={formData.contact_phone}
+              onChange={(val) => handleInputChange('contact_phone', val || '')}
+              className={clsx(
+                'w-full text-sm text-neutral-900 dark:text-neutral-100 rounded',
+                '[&_.PhoneInputInput]:w-full [&_.PhoneInputInput]:rounded-r-md',
+                '[&_.PhoneInputInput]:px-3 [&_.PhoneInputInput]:py-2.5 [&_.PhoneInputInput]:bg-white dark:[&_.PhoneInputInput]:bg-neutral-900',
+                '[&_.PhoneInputInput]:border-l',
+                '[&_.PhoneInputInput]:focus:outline-none',
+                '[&_.PhoneInput]:flex [&_.PhoneInput]:rounded-md [&_.PhoneInput]:border [&_.PhoneInput]:bg-white dark:[&_.PhoneInput]:bg-neutral-900',
+                errors.contact_phone
+                  ? '[&_.PhoneInputInput]:border-red-500 dark:[&_.PhoneInputInput]:border-red-500 [&_.PhoneInput]:border-red-500 dark:[&_.PhoneInput]:border-red-500'
+                  : '[&_.PhoneInputInput]:border-neutral-300 dark:[&_.PhoneInputInput]:border-neutral-700 [&_.PhoneInput]:border-neutral-300 dark:[&_.PhoneInput]:border-neutral-700'
+              )}
+            />
             {errors.contact_phone && (
               <p className="mt-1 text-xs text-red-500">{errors.contact_phone}</p>
             )}
@@ -256,26 +272,19 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
               Contact Email <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <input
-                type="email"
-                value={formData.contact_email}
-                onChange={(e) => handleInputChange('contact_email', e.target.value)}
-                placeholder="info@nairobidrinks.co.ke"
-                className={clsx(
-                  'w-full px-4 py-2.5 pl-10 text-sm border rounded-lg transition-colors',
-                  'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100',
-                  'focus:outline-none focus:ring-2 focus:ring-primary',
-                  errors.contact_email
-                    ? 'border-red-500 dark:border-red-500'
-                    : 'border-neutral-300 dark:border-neutral-700'
-                )}
-              />
-              <Mail
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"
-              />
-            </div>
+            <input
+              type="email"
+              value={formData.contact_email}
+              onChange={(e) => handleInputChange('contact_email', e.target.value)}
+              className={clsx(
+                'w-full px-4 py-2.5 text-sm border rounded-lg transition-colors',
+                'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100',
+                'focus:outline-none focus:ring-2 focus:ring-primary',
+                errors.contact_email
+                  ? 'border-red-500 dark:border-red-500'
+                  : 'border-neutral-300 dark:border-neutral-700'
+              )}
+            />
             {errors.contact_email && (
               <p className="mt-1 text-xs text-red-500">{errors.contact_email}</p>
             )}
@@ -284,31 +293,19 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
           {/* KRA PIN */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
-              KRA PIN <span className="text-red-500">*</span>
+              KRA PIN
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={formData.kra_pin}
-                onChange={(e) => handleInputChange('kra_pin', e.target.value.toUpperCase())}
-                placeholder="A012345678B"
-                className={clsx(
-                  'w-full px-4 py-2.5 pl-10 text-sm border rounded-lg transition-colors uppercase',
-                  'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100',
-                  'focus:outline-none focus:ring-2 focus:ring-primary',
-                  errors.kra_pin
-                    ? 'border-red-500 dark:border-red-500'
-                    : 'border-neutral-300 dark:border-neutral-700'
-                )}
-              />
-              <Tag
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"
-              />
-            </div>
-            {errors.kra_pin && (
-              <p className="mt-1 text-xs text-red-500">{errors.kra_pin}</p>
-            )}
+            <input
+              type="text"
+              value={formData.kra_pin}
+              onChange={(e) => handleInputChange('kra_pin', e.target.value.toUpperCase())}
+              className={clsx(
+                'w-full px-4 py-2.5 text-sm border rounded-lg transition-colors uppercase',
+                'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100',
+                'focus:outline-none focus:ring-2 focus:ring-primary',
+                'border-neutral-300 dark:border-neutral-700'
+              )}
+            />
           </div>
 
           {/* Industry */}
@@ -316,34 +313,51 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
               Industry <span className="text-red-500">*</span>
             </label>
-            <select
-              value={formData.industry}
-              onChange={(e) => handleInputChange('industry', e.target.value)}
-              className={clsx(
-                'w-full px-4 py-2.5 text-sm border rounded-lg transition-colors',
-                'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100',
-                'focus:outline-none focus:ring-2 focus:ring-primary',
-                'border-neutral-300 dark:border-neutral-700'
-              )}
-            >
-              {industryOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={industryOptions.find((opt) => opt.value === formData.industry)}
+              options={industryOptions}
+              onChange={handleIndustryChange}
+              className="text-sm"
+              classNames={{
+                control: ({ isFocused }) =>
+                  clsx(
+                    '!min-h-[42px] !text-sm transition-colors',
+                    '!border !rounded-lg',
+                    '!border-neutral-300 dark:!border-neutral-700',
+                    '!bg-white dark:!bg-neutral-900',
+                    'hover:!border-primary/60',
+                    isFocused && '!border-primary/80 !ring-2 !ring-primary/30'
+                  ),
+                menu: () =>
+                  clsx(
+                    'dark:!bg-neutral-900 dark:!border-neutral-700',
+                    '!border !border-neutral-300 dark:!border-neutral-700',
+                    '!rounded-lg !shadow-lg !text-sm !mt-1 z-[999]'
+                  ),
+                menuList: () => '!p-1 dark:!text-neutral-100',
+                option: ({ isFocused, isSelected }) =>
+                  clsx(
+                    '!px-3 !py-2 !text-sm !cursor-pointer',
+                    'dark:!text-neutral-100',
+                    isSelected
+                      ? '!bg-primary/20 !text-primary dark:!bg-primary/30'
+                      : isFocused
+                      ? '!bg-neutral-100 dark:!bg-neutral-800'
+                      : '!bg-transparent'
+                  ),
+                singleValue: () => '!text-neutral-900 dark:!text-neutral-100',
+                placeholder: () => '!text-neutral-500 dark:!text-neutral-400',
+                dropdownIndicator: () =>
+                  '!text-neutral-500 dark:!text-neutral-400 hover:!text-primary',
+              }}
+            />
           </div>
 
           {/* Outlet Details Section */}
           <div className="pt-6 mt-6 border-t border-neutral-200 dark:border-neutral-700">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <MapPin size={20} className="text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
-                First Outlet Details
-              </h3>
-            </div>
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
+              First Outlet Details
+            </h3>
 
             {/* Outlet Name */}
             <div className="mb-4">
@@ -354,10 +368,9 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
                 type="text"
                 value={formData.outlet_name}
                 onChange={(e) => handleInputChange('outlet_name', e.target.value)}
-                placeholder="e.g. Westlands Branch"
                 className={clsx(
                   'w-full px-4 py-2.5 text-sm border rounded-lg transition-colors',
-                  'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100',
+                  'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100',
                   'focus:outline-none focus:ring-2 focus:ring-primary',
                   errors.outlet_name
                     ? 'border-red-500 dark:border-red-500'
@@ -374,18 +387,22 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
                 Outlet Phone <span className="text-red-500">*</span>
               </label>
-              <input
-                type="tel"
+              <PhoneInput
+                country="KE"
+                international
+                defaultCountry="KE"
                 value={formData.outlet_phone}
-                onChange={(e) => handleInputChange('outlet_phone', e.target.value)}
-                placeholder="0733567890"
+                onChange={(val) => handleInputChange('outlet_phone', val || '')}
                 className={clsx(
-                  'w-full px-4 py-2.5 text-sm border rounded-lg transition-colors',
-                  'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100',
-                  'focus:outline-none focus:ring-2 focus:ring-primary',
+                  'w-full text-sm text-neutral-900 dark:text-neutral-100 rounded',
+                  '[&_.PhoneInputInput]:w-full [&_.PhoneInputInput]:rounded-r-md',
+                  '[&_.PhoneInputInput]:px-3 [&_.PhoneInputInput]:py-2.5 [&_.PhoneInputInput]:bg-white dark:[&_.PhoneInputInput]:bg-neutral-900',
+                  '[&_.PhoneInputInput]:border-l',
+                  '[&_.PhoneInputInput]:focus:outline-none',
+                  '[&_.PhoneInput]:flex [&_.PhoneInput]:rounded-md [&_.PhoneInput]:border [&_.PhoneInput]:bg-white dark:[&_.PhoneInput]:bg-neutral-900',
                   errors.outlet_phone
-                    ? 'border-red-500 dark:border-red-500'
-                    : 'border-neutral-300 dark:border-neutral-700'
+                    ? '[&_.PhoneInputInput]:border-red-500 dark:[&_.PhoneInputInput]:border-red-500 [&_.PhoneInput]:border-red-500 dark:[&_.PhoneInput]:border-red-500'
+                    : '[&_.PhoneInputInput]:border-neutral-300 dark:[&_.PhoneInputInput]:border-neutral-700 [&_.PhoneInput]:border-neutral-300 dark:[&_.PhoneInput]:border-neutral-700'
                 )}
               />
               {errors.outlet_phone && (
@@ -402,10 +419,9 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
                 type="email"
                 value={formData.outlet_email}
                 onChange={(e) => handleInputChange('outlet_email', e.target.value)}
-                placeholder="westlands@nairobidrinks.co.ke"
                 className={clsx(
                   'w-full px-4 py-2.5 text-sm border rounded-lg transition-colors',
-                  'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100',
+                  'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100',
                   'focus:outline-none focus:ring-2 focus:ring-primary',
                   errors.outlet_email
                     ? 'border-red-500 dark:border-red-500'
@@ -424,40 +440,28 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
 
         {/* Right Column: Owner Profile */}
         <div className="flex-1 space-y-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <User size={20} className="text-primary" />
-            </div>
-            <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
-              Owner Profile
-            </h2>
-          </div>
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-6">
+            Owner Profile
+          </h2>
 
           {/* First Name */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
               First Name <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={formData.first_name}
-                onChange={(e) => handleInputChange('first_name', e.target.value)}
-                placeholder="Peter"
-                className={clsx(
-                  'w-full px-4 py-2.5 pl-10 text-sm border rounded-lg transition-colors',
-                  'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100',
-                  'focus:outline-none focus:ring-2 focus:ring-primary',
-                  errors.first_name
-                    ? 'border-red-500 dark:border-red-500'
-                    : 'border-neutral-300 dark:border-neutral-700'
-                )}
-              />
-              <User
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"
-              />
-            </div>
+            <input
+              type="text"
+              value={formData.first_name}
+              onChange={(e) => handleInputChange('first_name', e.target.value)}
+              className={clsx(
+                'w-full px-4 py-2.5 text-sm border rounded-lg transition-colors',
+                'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100',
+                'focus:outline-none focus:ring-2 focus:ring-primary',
+                errors.first_name
+                  ? 'border-red-500 dark:border-red-500'
+                  : 'border-neutral-300 dark:border-neutral-700'
+              )}
+            />
             {errors.first_name && (
               <p className="mt-1 text-xs text-red-500">{errors.first_name}</p>
             )}
@@ -468,26 +472,19 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
               Last Name <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={formData.last_name}
-                onChange={(e) => handleInputChange('last_name', e.target.value)}
-                placeholder="Kamande"
-                className={clsx(
-                  'w-full px-4 py-2.5 pl-10 text-sm border rounded-lg transition-colors',
-                  'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100',
-                  'focus:outline-none focus:ring-2 focus:ring-primary',
-                  errors.last_name
-                    ? 'border-red-500 dark:border-red-500'
-                    : 'border-neutral-300 dark:border-neutral-700'
-                )}
-              />
-              <User
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"
-              />
-            </div>
+            <input
+              type="text"
+              value={formData.last_name}
+              onChange={(e) => handleInputChange('last_name', e.target.value)}
+              className={clsx(
+                'w-full px-4 py-2.5 text-sm border rounded-lg transition-colors',
+                'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100',
+                'focus:outline-none focus:ring-2 focus:ring-primary',
+                errors.last_name
+                  ? 'border-red-500 dark:border-red-500'
+                  : 'border-neutral-300 dark:border-neutral-700'
+              )}
+            />
             {errors.last_name && (
               <p className="mt-1 text-xs text-red-500">{errors.last_name}</p>
             )}
@@ -498,26 +495,19 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
               Email Address <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="peter@nairobidrinks.co.ke"
-                className={clsx(
-                  'w-full px-4 py-2.5 pl-10 text-sm border rounded-lg transition-colors',
-                  'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100',
-                  'focus:outline-none focus:ring-2 focus:ring-primary',
-                  errors.email
-                    ? 'border-red-500 dark:border-red-500'
-                    : 'border-neutral-300 dark:border-neutral-700'
-                )}
-              />
-              <Mail
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"
-              />
-            </div>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleInputChange('email', e.target.value)}
+              className={clsx(
+                'w-full px-4 py-2.5 text-sm border rounded-lg transition-colors',
+                'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100',
+                'focus:outline-none focus:ring-2 focus:ring-primary',
+                errors.email
+                  ? 'border-red-500 dark:border-red-500'
+                  : 'border-neutral-300 dark:border-neutral-700'
+              )}
+            />
             {errors.email && (
               <p className="mt-1 text-xs text-red-500">{errors.email}</p>
             )}
@@ -528,26 +518,24 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
               Phone Number <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                placeholder="0721567890"
-                className={clsx(
-                  'w-full px-4 py-2.5 pl-10 text-sm border rounded-lg transition-colors',
-                  'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100',
-                  'focus:outline-none focus:ring-2 focus:ring-primary',
-                  errors.phone
-                    ? 'border-red-500 dark:border-red-500'
-                    : 'border-neutral-300 dark:border-neutral-700'
-                )}
-              />
-              <Phone
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"
-              />
-            </div>
+            <PhoneInput
+              country="KE"
+              international
+              defaultCountry="KE"
+              value={formData.phone}
+              onChange={(val) => handleInputChange('phone', val || '')}
+              className={clsx(
+                'w-full text-sm text-neutral-900 dark:text-neutral-100 rounded',
+                '[&_.PhoneInputInput]:w-full [&_.PhoneInputInput]:rounded-r-md',
+                '[&_.PhoneInputInput]:px-3 [&_.PhoneInputInput]:py-2.5 [&_.PhoneInputInput]:bg-white dark:[&_.PhoneInputInput]:bg-neutral-900',
+                '[&_.PhoneInputInput]:border-l',
+                '[&_.PhoneInputInput]:focus:outline-none',
+                '[&_.PhoneInput]:flex [&_.PhoneInput]:rounded-md [&_.PhoneInput]:border [&_.PhoneInput]:bg-white dark:[&_.PhoneInput]:bg-neutral-900',
+                errors.phone
+                  ? '[&_.PhoneInputInput]:border-red-500 dark:[&_.PhoneInputInput]:border-red-500 [&_.PhoneInput]:border-red-500 dark:[&_.PhoneInput]:border-red-500'
+                  : '[&_.PhoneInputInput]:border-neutral-300 dark:[&_.PhoneInputInput]:border-neutral-700 [&_.PhoneInput]:border-neutral-300 dark:[&_.PhoneInput]:border-neutral-700'
+              )}
+            />
             {errors.phone && (
               <p className="mt-1 text-xs text-red-500">{errors.phone}</p>
             )}
@@ -563,19 +551,14 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
-                placeholder="Enter secure password"
                 className={clsx(
-                  'w-full px-4 py-2.5 pl-10 pr-10 text-sm border rounded-lg transition-colors',
-                  'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100',
+                  'w-full px-4 py-2.5 pr-10 text-sm border rounded-lg transition-colors',
+                  'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100',
                   'focus:outline-none focus:ring-2 focus:ring-primary',
                   errors.password
                     ? 'border-red-500 dark:border-red-500'
                     : 'border-neutral-300 dark:border-neutral-700'
                 )}
-              />
-              <Key
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"
               />
               <button
                 type="button"
@@ -618,54 +601,68 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
             {errors.password && (
               <p className="mt-1 text-xs text-red-500">{errors.password}</p>
             )}
-            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-              Minimum 4 characters
-            </p>
           </div>
 
-          {/* Optional: Referral Fields */}
-          <div className="pt-6 mt-6 border-t border-neutral-200 dark:border-neutral-700">
-            <h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-4">
-              Optional Referral Information
-            </h3>
-
-            {/* Referrer User ID */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
-                Referrer User ID
-              </label>
+          {/* Confirm Password */}
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
+              Confirm Password <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
               <input
-                type="text"
-                value={formData.referrer_user_id || ''}
-                onChange={(e) => handleInputChange('referrer_user_id', e.target.value || null)}
-                placeholder="Optional"
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => handleConfirmPasswordChange(e.target.value)}
                 className={clsx(
-                  'w-full px-4 py-2.5 text-sm border rounded-lg transition-colors',
-                  'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100',
+                  'w-full px-4 py-2.5 pr-10 text-sm border rounded-lg transition-colors',
+                  'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100',
                   'focus:outline-none focus:ring-2 focus:ring-primary',
-                  'border-neutral-300 dark:border-neutral-700'
+                  errors.confirm_password
+                    ? 'border-red-500 dark:border-red-500'
+                    : 'border-neutral-300 dark:border-neutral-700'
                 )}
               />
-            </div>
-
-            {/* Installer User ID */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
-                Installer User ID
-              </label>
-              <input
-                type="text"
-                value={formData.installer_user_id || ''}
-                onChange={(e) => handleInputChange('installer_user_id', e.target.value || null)}
-                placeholder="Optional"
-                className={clsx(
-                  'w-full px-4 py-2.5 text-sm border rounded-lg transition-colors',
-                  'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100',
-                  'focus:outline-none focus:ring-2 focus:ring-primary',
-                  'border-neutral-300 dark:border-neutral-700'
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+              >
+                {showConfirmPassword ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
                 )}
-              />
+              </button>
             </div>
+            {errors.confirm_password && (
+              <p className="mt-1 text-xs text-red-500">{errors.confirm_password}</p>
+            )}
           </div>
         </div>
       </div>

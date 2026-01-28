@@ -1,5 +1,6 @@
 export const endpoints = {
 listAccounts:"/internal/accounts",
+createAccount:"/internal/accounts",
 
 
 

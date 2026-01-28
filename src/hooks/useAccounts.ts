@@ -78,23 +78,6 @@ async function fetchAccounts(params: {
   return response.json();
 }
 
-// ── Create Account ───────────────────────────────────────
-async function createAccount(payload: CreateAccountPayload): Promise<Account> {
-  const response = await fetch(`${API_BASE_URL}/accounts`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to create account');
-  }
-
-  return response.json();
-}
 
 // ── Update Account ───────────────────────────────────────
 async function updateAccount(payload: UpdateAccountPayload): Promise<Account> {
@@ -168,16 +151,19 @@ export function useAccount(accountId: string) {
 /**
  * Create new account
  */
-export function useCreateAccount() {
+export const useCreateAccount = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createAccount,
+    mutationFn: async (payload: any) => {
+      const { data } = await api.post(endpoints.createAccount, payload);
+      return data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
     },
   });
-}
+};
 
 /**
  * Update existing account

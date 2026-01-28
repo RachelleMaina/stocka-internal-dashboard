@@ -1,12 +1,11 @@
 "use client";
 
+import BackofficeNavbar from "@/components/backoffice/NavbarOld";
 import { AppStateProvider } from "@/lib/context/AppState";
-import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import "react-loading-skeleton/dist/skeleton.css";
 import "react-phone-number-input/style.css";
 import "./globals.css";
-import { SyncProvider } from "@/lib/context/SyncContext";
 
 export const toastOptions = {
   className:
@@ -49,61 +48,29 @@ export const toastOptions = {
 };
 
 export default function ClientLayout({ children }: any) {
-  const env = process.env.NEXT_PUBLIC_ENV;
 
-let baseURL: string | undefined;
-
-switch (env) {
-  case "production":
-    baseURL = process.env.NEXT_PUBLIC_API_URL_PROD;
-    break;
-  case "staging":
-    baseURL = process.env.NEXT_PUBLIC_API_URL_STAGING;
-    break;
-  case "development":
-  default:
-    baseURL = process.env.NEXT_PUBLIC_API_URL_DEV;
-  }
-  
- useEffect(() => {
-   if ("serviceWorker" in navigator && "SyncManager" in window) {
-       const baseUrl = baseURL || "http://localhost:5001";
-    navigator.serviceWorker
-     .register(`/sw.js?baseUrl=${encodeURIComponent(baseUrl)}`)
-      .then((reg) => {
-        console.log("[SW] Registered successfully");
-
-        const registerSync = () => {
-          reg.sync.register("SYNC_SALES").then(() => {
-            console.log("[SW] Background sync registered");
-          }).catch((err) => {
-            console.error("[SW] Failed to register background sync", err);
-          });
-        };
-
-        if (navigator.serviceWorker.controller) {
-          registerSync();
-        } else {
-          navigator.serviceWorker.addEventListener("controllerchange", registerSync);
-        }
-      })
-      .catch((err) => {
-        console.error("[SW] Registration failed", err);
-      });
-  }
-}, []);
 
 
   return (
     <AppStateProvider>
-      <SyncProvider>
+   
       <Toaster
         position="top-center"
         // toastOptions={toastOptions}
       />
-
-        {children}
-        </SyncProvider>
+<div className="h-screen flex bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-50">
+  
+      {/* <Sidebar toggleTheme={toggleTheme} /> */}
+      <main
+        className="flex-1 overflow-y-auto"
+      >
+        <BackofficeNavbar />
+        <div  className="max-w-screen-7xl mx-auto" >
+       {children}
+       </div>
+      </main>
+    </div>
+    
     </AppStateProvider>
   );
 }

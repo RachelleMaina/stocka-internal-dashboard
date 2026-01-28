@@ -10,7 +10,7 @@ const nextConfig = {
     return [
       {
         source: "/api/v1/:path*",                   // What the browser calls
-        destination: "http://192.168.213.16:3001/api/v1/:path*", // Your real backend
+        destination: "http://192.168.213.16:3001/api/v1/:path*", // The real backend
       },
     ];
   },

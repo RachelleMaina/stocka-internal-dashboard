@@ -121,7 +121,7 @@ const AccountsPage = () => {
   };
 
   return (
-    <div className="max-w-screen-2xl mx-auto p-6">
+    <div>
       <PageHeader
         title="Accounts"
         searchValue={searchInput}
