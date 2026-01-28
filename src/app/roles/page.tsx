@@ -1,3 +1,4 @@
+
 "use client";
 
 import LinkCard from "@/components/backoffice/LinkCard";
@@ -6,30 +7,33 @@ import { routes } from "@/constants/routes";
 import { Briefcase, LayoutDashboard, ShoppingCart } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-const PermissionsLandingPage = () => {
+const RolesLandingPage = () => {
   const router = useRouter();
 
   const links = [
     {
       title: "Internal Dashboard",
       icon: LayoutDashboard,
-      onClick: () => router.push(routes.listInternalPermissions),
+      onClick: () => router.push(routes.listInternalRoles),
     },
     {
       title: "Backoffice",
       icon: Briefcase,
-      onClick: () => router.push(routes.listBackofficePermissions),
+      onClick: () => router.push(routes.listBackofficeRoles),
     },
     {
       title: "Pos",
       icon: ShoppingCart,
-      onClick: () => router.push(routes.listPosPermissions),
+      onClick: () => router.push(routes.listPosRoles),
     },
   ];
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Permissions" />
+      <PageHeader
+        title="Roles"
+      
+      />
 
       <div className="flex flex-wrap gap-4 mx-4">
         {links.map((card) => (
@@ -40,4 +44,4 @@ const PermissionsLandingPage = () => {
   );
 };
 
-export default PermissionsLandingPage;
+export default RolesLandingPage;

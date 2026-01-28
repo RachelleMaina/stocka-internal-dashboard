@@ -5,6 +5,11 @@ export const routes = {
   listBackofficePermissions:"/permissions/backoffice",
   listPosPermissions:"/permissions/pos",
 
+    //Roles
+    roles:"/roles",
+    listInternalRoles:"/roles/internal",
+    listBackofficeRoles:"/roles/backoffice",
+    listPosRoles:"/roles/pos",
 
   //Items
 listItems:"/items/catalogue/list",
@@ -82,7 +87,7 @@ voidBill:(id:string)=>`/bills/${id}/void`,
   people: "/people",
   staff: "/people/staff",
   staffForm: "/people/staff/form",
-  roles: "/people/roles",
+
   roleForm: "/people/roles/form",
 
 customers:"/people/customers",
