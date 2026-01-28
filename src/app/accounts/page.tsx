@@ -1,6 +1,6 @@
 "use client";
 
-import CreateAccountForm from "@/components/common/CreateAccountForm";
+import CreateAccountForm from "@/components/CreateAccountForm";
 import Modal from "@/components/common/Modal";
 import PageHeader from "@/components/common/PageHeader";
 import ReusableTable from "@/components/common/ReusableTable";

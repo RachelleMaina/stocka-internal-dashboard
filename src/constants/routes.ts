@@ -1,4 +1,10 @@
 export const routes = {
+  //Permissions
+  permissions:"/permissions",
+  listInternalPermissions:"/permissions/internal",
+  listBackofficePermissions:"/permissions/backoffice",
+  listPosPermissions:"/permissions/pos",
+
 
   //Items
 listItems:"/items/catalogue/list",
