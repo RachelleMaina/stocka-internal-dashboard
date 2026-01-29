@@ -2,52 +2,51 @@
 
 import clsx from "clsx";
 import { Plus } from "lucide-react";
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
-import ConfirmDialog from "@/components/common/ConfirmDialog";
 import Modal from "@/components/common/Modal";
 import PageHeader from "@/components/common/PageHeader";
 import ReusableTable from "@/components/common/ReusableTable";
-import StatusBadge from "@/components/common/StatusBadge";
 import Tabs from "@/components/common/Tabs";
-import PermissionModal from "@/components/PermissionsModal";
-import { routes } from "@/constants/routes";
-import {
-  useCreatePermission,
-  usePermissions,
-  useTogglePermissionStatus,
-  useUpdatePermission,
-} from "@/hooks/usePermissions";
-import { format, parseISO } from "date-fns";
 
+import ConfirmDialog from "@/components/common/ConfirmDialog";
+import StatusBadge from "@/components/common/StatusBadge";
+import RoleModal from "@/components/RoleModal";
+import { routes } from "@/constants/routes";
+import { usePermissions } from "@/hooks/usePermissions";
+import {
+  useCreateRole,
+  useRoles,
+  useToggleRoleStatus,
+  useUpdateRole,
+} from "@/hooks/useRoles";
+import { format, parseISO } from "date-fns";
+import { useSearchParams } from "next/navigation";
 const TABS = [
   { key: "all", label: "All" },
   { key: "inactive", label: "Inactive" },
 ];
 
 const COLUMNS = [
-  { key: "code", label: "Code" },
-  { key: "description", label: "Description" },
-  { key: "module", label: "Module" },
-  { key: "status", label: "Status" },
+  { key: "role_name", label: "Role Name" },
   { key: "updated_at", label: "Last Updated" },
+  { key: "status", label: "Status" },
   { key: "actions", label: "Actions" },
 ];
 
-interface PermissionsPosPageProps {
-  appContext: "pos"; // or pass dynamically if reused
-}
+const BackofficeRolesPage = () => {
+  const appContext = "backoffice";
+  const searchParams = useSearchParams();
+  const outletId = searchParams.get("outlet_id");
+  const accountId = searchParams.get("account_id");
 
-const PermissionsPosPage: React.FC<PermissionsPosPageProps> = ({
-  appContext = "pos",
-}) => {
   const [activeTab, setActiveTab] = useState("all");
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPermission, setSelectedPermission] = useState<any>(null);
+  const [selectedRole, setSelectedRole] = useState<any>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [pendingToggle, setPendingToggle] = useState<{
     id: string;
@@ -63,50 +62,58 @@ const PermissionsPosPage: React.FC<PermissionsPosPageProps> = ({
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  // Query params
-  const queryParams = useMemo(
+  // Query params for roles
+  const roleParams = useMemo(
     () => ({
       app_context: appContext,
+      outlet_id: outletId,
+      account_id: accountId,
       status: activeTab === "all" ? undefined : activeTab,
       search: debouncedSearch || undefined,
       page: currentPage,
       limit: 20,
     }),
-    [activeTab, debouncedSearch, currentPage, appContext]
+    [activeTab, debouncedSearch, currentPage]
   );
 
-  const { data: permissionsResponse, isLoading } = usePermissions({
-    params: queryParams,
+  const { data: rolesResponse, isLoading: rolesLoading } = useRoles({
+    params: roleParams,
   });
-  const createMutation = useCreatePermission();
-  const updateMutation = useUpdatePermission();
-  const toggleMutation = useTogglePermissionStatus();
 
+  // Fetch permissions for the Backoffice context (for modal multi-select)
+  const { data: permissionsResponse } = usePermissions({
+    params: { app_context: appContext, limit: 500 },
+  });
+  const createMutation = useCreateRole();
+  const updateMutation = useUpdateRole();
+  const toggleMutation = useToggleRoleStatus();
+
+  const roles = rolesResponse?.roles || [];
   const permissions = permissionsResponse?.permissions || [];
-  const pagination = permissionsResponse?.pagination;
+  const pagination = rolesResponse?.pagination;
 
-  // Transform for table
   const tableData = useMemo(() => {
-    return permissions.map((perm) => ({
-      ...perm,
-      status: perm.is_active ? "Active" : "Inactive",
-      rawPermission: perm,
+    return roles.map((role) => ({
+      ...role,
+      permission_count: role.permission_ids?.length || 0,
+      status: role.is_active ? "Active" : "Inactive",
+      rawRole: role,
     }));
-  }, [permissions]);
+  }, [roles]);
 
   const handleAddNew = () => {
-    setSelectedPermission(null);
+    setSelectedRole(null);
     setIsModalOpen(true);
   };
 
   const handleEdit = (row: any) => {
-    setSelectedPermission(row.rawPermission);
+    setSelectedRole(row.rawRole);
     setIsModalOpen(true);
   };
 
   // Open confirmation before toggle
-  const requestToggle = (permissionId: string, currentStatus: boolean) => {
-    setPendingToggle({ id: permissionId, is_active: !currentStatus });
+  const requestToggle = (roleId: string, currentStatus: boolean) => {
+    setPendingToggle({ id: roleId, is_active: !currentStatus });
     setIsConfirmOpen(true);
   };
 
@@ -119,10 +126,10 @@ const PermissionsPosPage: React.FC<PermissionsPosPageProps> = ({
     try {
       await toggleMutation.mutateAsync({ id, is_active });
       toast.success(
-        `Permission ${is_active ? "activated" : "deactivated"} successfully`
+        `Role ${is_active ? "activated" : "deactivated"} successfully`
       );
     } catch (err) {
-      toast.error("Failed to update permission status");
+      toast.error("Failed to update role status");
     } finally {
       setIsConfirmOpen(false);
       setPendingToggle(null);
@@ -131,44 +138,53 @@ const PermissionsPosPage: React.FC<PermissionsPosPageProps> = ({
 
   const handleModalSubmit = async (formData: any) => {
     try {
-      if (selectedPermission) {
+      // Prepare the full payload with outlet_id and account_id
+      const fullPayload = {
+        ...formData,
+        outlet_id: outletId,
+        account_id: accountId,
+      };
+
+      if (selectedRole) {
+        // Update: send IDs in the payload (backend will use as query params if needed)
         await updateMutation.mutateAsync({
-          id: selectedPermission.id,
-          ...formData,
+          id: selectedRole.id,
+          ...fullPayload,
         });
-        toast.success("Permission updated");
+        toast.success("Role updated successfully");
       } else {
-        await createMutation.mutateAsync({
-          ...formData,
-          app_context: appContext,
-        });
-        toast.success("Permission created");
+        // Create: send IDs in the payload
+        await createMutation.mutateAsync(fullPayload);
+        toast.success("Role created successfully");
       }
+
       setIsModalOpen(false);
-      setSelectedPermission(null);
+      setSelectedRole(null);
     } catch (err) {
-      toast.error(selectedPermission ? "Failed to update" : "Failed to create");
+      toast.error(
+        selectedRole ? "Failed to update role" : "Failed to create role"
+      );
     }
   };
 
   const handleModalClose = () => {
     setIsModalOpen(false);
-    setSelectedPermission(null);
+    setSelectedRole(null);
   };
 
   return (
     <div>
       <PageHeader
-        title={`${appContext.toUpperCase()} Permissions`}
-        breadcrumb="Permissions"
-        breadcrumbPath={routes.permissions}
+        title="Backoffice Roles"
+        breadcrumb="Roles"
+        breadcrumbPath={routes.roles}
         searchValue={searchInput}
         searchOnChange={setSearchInput}
-        searchPlaceholder="Search permissions..."
+        searchPlaceholder="Search roles..."
         searchWidth="w-72"
         buttons={[
           {
-            label: "Add Permission",
+            label: "Add Role",
             icon: Plus,
             onClick: handleAddNew,
             variant: "primary",
@@ -182,7 +198,7 @@ const PermissionsPosPage: React.FC<PermissionsPosPageProps> = ({
         <ReusableTable
           data={tableData}
           columns={COLUMNS}
-          loading={isLoading}
+          loading={rolesLoading}
           pagination={pagination}
           onPageChange={setCurrentPage}
           scopedColumns={{
@@ -227,39 +243,28 @@ const PermissionsPosPage: React.FC<PermissionsPosPageProps> = ({
               </td>
             ),
           }}
-          emptyMessage={`No ${appContext} permissions found.`}
+          emptyMessage="No Backoffice roles found."
         />
       </div>
 
-      {/* Edit/Add Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={handleModalClose}
         title={
-          selectedPermission
-            ? `Edit Permission: ${selectedPermission.code}`
-            : `Add New ${appContext.toUpperCase()} Permission`
+          selectedRole
+            ? `Edit Role: ${selectedRole.role_name}`
+            : "Add New Backoffice Role"
         }
-        size="lg"
+        size="xl"
+        height="full"
       >
-        <PermissionModal
+        <RoleModal
           onSubmit={handleModalSubmit}
           onCancel={handleModalClose}
-          initialData={selectedPermission}
-          modules = {[
-            "Sales",
-            "Billing",
-            "Inventory",
-            "Users",
-            "Reports",
-            "Settings",
-            "Discounts",
-            "Dashboard",
-            "Customers",
-            "Payments",
-            "Other",
-          ]}
-          isLoading={createMutation.isPending || updateMutation.isPending}
+          initialData={selectedRole}
+          permissions={permissions}
+          appContext={appContext}
+          isLoading={false}
         />
       </Modal>
 
@@ -289,4 +294,4 @@ const PermissionsPosPage: React.FC<PermissionsPosPageProps> = ({
   );
 };
 
-export default PermissionsPosPage;
+export default BackofficeRolesPage;

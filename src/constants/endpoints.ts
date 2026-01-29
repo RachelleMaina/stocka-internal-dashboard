@@ -3,7 +3,7 @@ listAccounts:"/internal/accounts",
 createAccount:"/internal/accounts",
 
 permissions:"/internal/permissions",
-
+roles:"/internal/roles",
 
 
  login: "/auth/login",
